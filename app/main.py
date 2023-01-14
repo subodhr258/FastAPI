@@ -1,21 +1,23 @@
 # venv\Scripts\activate.bat
 # uvicorn app.main:app --reload
+#sqlalchemy is one of the most popular ORMs. It can be used with any framework.
 
-from fastapi import FastAPI, Response, status, HTTPException
+from fastapi import FastAPI, Response, status, HTTPException, Depends
 from fastapi.params import Body
-from pydantic import BaseModel
-from typing import Optional
-from random import randrange
+from typing import Optional, List
+
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
+from sqlalchemy.orm import Session
+from . import models, schemas, utils
+from .database import engine,get_db
+from .routers import post, user, auth
+
+models.Base.metadata.create_all(bind=engine)
+
 app = FastAPI()
 
-class Post(BaseModel):
-    title: str
-    content: str
-    published: bool = True
-    rating: Optional[int] = None
 while True:
     try:
         conn = psycopg2.connect(host="localhost",database="fastapi",user="postgres",password="1234",
@@ -28,64 +30,11 @@ while True:
         print("Error:",error)
         time.sleep(2)
 
-my_posts = [{"title":"title of post 1", "content":"content of post 1", "id": 1}, 
-{"title":"favourite foods","content":"I like pizza","id":2}]
-
-def find_post(id):
-    for p in my_posts:
-        if p["id"] == id:
-            return p
-
-def find_index_post(id):
-    for i in range(len(my_posts)):
-        if my_posts[i]["id"] == id:
-            return i
+app.include_router(post.router)
+app.include_router(user.router)
+app.include_router(auth.router)
 
 @app.get("/") #route or path operation decorator
-async def root():
+async def root(): #async needed?
     return {"message":"Welcome to my API..."}
 
-@app.get("/posts")
-def get_posts():
-    cursor.execute("""SELECT * FROM posts""")
-    posts = cursor.fetchall()
-    return {"data":posts}
-
-@app.post("/posts", status_code = status.HTTP_201_CREATED)
-def create_posts(post:Post): #convert body to dictionary called payload
-    cursor.execute("""INSERT INTO posts (title, content, published) VALUES (%s,%s,%s) RETURNING *""",
-    (post.title,post.content,post.published))
-    #Fstrings are vulnerable to SQL injection attack. Postgres library can sanitize the inputs.
-    new_post = cursor.fetchone()
-    conn.commit()
-    return {"data":new_post}
-
-@app.get("/posts/{id}")
-def get_post(id: int):
-    cursor.execute("""SELECT * FROM posts WHERE id = %s """,(str(id),))
-    post = cursor.fetchone()
-    if not post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail = f"post with id {id} not found")
-    return {"post_details":post}
-
-@app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_post(id:int):
-    cursor.execute(""" DELETE FROM posts WHERE id = %s RETURNING *""",(str(id),))
-    deleted_post = cursor.fetchone()
-    conn.commit()
-    if not deleted_post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"post with id {id} does not exist")
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-@app.put("/posts/{id}")
-def update_post(id: int, post: Post):
-    cursor.execute("""UPDATE posts SET title = %s, content = %s, published = %s WHERE id = %s  RETURNING *""",
-    (post.title,post.content,post.published,str(id)))
-    updated_post = cursor.fetchone()
-    conn.commit()
-    if updated_post==None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"post with id {id} does not exist")
-    
-    return {"data": updated_post}
