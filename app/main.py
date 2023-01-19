@@ -1,34 +1,25 @@
 # venv\Scripts\activate.bat
 # uvicorn app.main:app --reload
-#sqlalchemy is one of the most popular ORMs. It can be used with any framework.
-
-from fastapi import FastAPI, Response, status, HTTPException, Depends
-from fastapi.params import Body
-from typing import Optional, List
-
-import psycopg2
-from psycopg2.extras import RealDictCursor
-import time
-from sqlalchemy.orm import Session
-from . import models, schemas, utils
-from .database import engine,get_db
+from fastapi import FastAPI
+from . import models
+from .database import engine
 from .routers import post, user, auth
+from .config import settings
+from fastapi.middleware.cors import CORSMiddleware
+
+# settings.database_password
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-while True:
-    try:
-        conn = psycopg2.connect(host="localhost",database="fastapi",user="postgres",password="1234",
-        cursor_factory=RealDictCursor)
-        cursor = conn.cursor()
-        print("Database Connection Successful")
-        break
-    except Exception as error:
-        print("Connecting to database failed.")
-        print("Error:",error)
-        time.sleep(2)
+origins = ['*']
+
+app.add_middleware(CORSMiddleware,
+allow_origins=origins,
+allow_credentials=True,
+allow_methods=["*"],
+allow_headers=["*"])
 
 app.include_router(post.router)
 app.include_router(user.router)

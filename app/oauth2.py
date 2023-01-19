@@ -4,15 +4,16 @@ from . import schemas, database, models
 from fastapi import Depends, status, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from .config import settings
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
 
 # 3 pieces of info in the hashed JWT: Header, payload, signature.
 # for that we need the SECRET_KEY, Algorithm, expiration time.
 
-SECRET_KEY = "secret" #usually it's very long like 092d5a7fdg9dfgh98e0ertr08gw6gh56gh7678erwtewrg8rwg87rw2
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+SECRET_KEY = settings.secret_key #usually it's very long like 092d5a7fdg9dfgh98e0ertr08gw6gh56gh7678erwtewrg8rwg87rw2
+ALGORITHM = settings.algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
 def create_access_token(data: dict):
     to_encode = data.copy()
