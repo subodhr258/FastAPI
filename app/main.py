@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 # settings.database_password
 
-models.Base.metadata.create_all(bind=engine)
+# models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -27,5 +27,5 @@ app.include_router(auth.router)
 
 @app.get("/") #route or path operation decorator
 async def root(): #async needed?
-    return {"message":"Welcome to my API..."}
+    return {"message":"Hello World"}
 
